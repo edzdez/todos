@@ -49,8 +49,9 @@ fn read_todos(opts: &Options) -> Result<Tasks, Box<dyn Error>> {
     Ok(tasks)
 }
 
-fn write_tasks(opts: &Options, tasks: &Tasks) -> Result<(), Box<dyn Error>> {
+fn write_tasks(opts: &Options, tasks: &mut Tasks) -> Result<(), Box<dyn Error>> {
     let path = open_file(opts)?;
+    tasks.sort_tasks();
     let mut file = File::create(&path)
         .with_context(|| format!("Failed to open file `{:?}` for writing", path))?;
 
@@ -85,36 +86,65 @@ fn list_todos(opts: &Options) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn add_todo(opts: &Options) -> Result<(), Box<dyn Error>> {
+fn add_todo(opts: &mut Options) -> Result<(), Box<dyn Error>> {
     let mut todos = read_todos(opts)?;
-    println!("\x1b[1;4mAdd a Todo:\x1b[0m");
+    println!("\x1b[1;4mAdd an Entry:\x1b[0m");
 
     println!("Enter contents:");
     let mut contents = String::new();
-    stdout().flush();
+    stdout().flush()?;
     stdin().read_line(&mut contents).unwrap();
 
     println!("Enter urgency: (Low, Medium, High)");
     let mut urgency = String::new();
-    stdout().flush();
+    stdout().flush()?;
     stdin().read_line(&mut urgency).unwrap();
 
     todos.tasks.push(Task::new(contents.trim().to_owned(), Urgency::from(urgency)));
 
-    write_tasks(opts, &todos)
+    write_tasks(opts, &mut todos)?;
+    println!();
+
+    opts.num_to_show = todos.tasks.len();
+    list_todos(opts)
 }
 
-fn remove_todo(opts: &Options) -> Result<(), Box<dyn Error>> {
-    todo!()
+fn remove_todo(opts: &mut Options) -> Result<(), Box<dyn Error>> {
+    let mut todos = read_todos(opts)?;
+    println!("\x1b[1;4mRemove an Entry:\x1b[0m");
+    opts.num_to_show = todos.tasks.len();
+    list_todos(opts)?;
+
+    println!("Enter the number of the entry to remove:");
+    let mut entry = String::new();
+    stdout().flush()?;
+    stdin().read_line(&mut entry).unwrap();
+    entry = String::from(entry.trim());
+
+    let entry = entry.parse::<usize>()
+        .with_context(|| format!("invalid entry: Please enter a number"))?;
+
+    if entry > todos.tasks.len() {
+        println!("Please enter the number of an entry: {} is too high", entry);
+    } else if entry <= 0 {
+        println!("Please enter the number of an entry: {} is too low", entry);
+    } else {
+        todos.tasks.remove(entry - 1);
+
+        write_tasks(opts, &mut todos)?;
+    }
+
+    println!();
+    list_todos(opts)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let opts = Options::from_args();
+    let mut opts = Options::from_args();
 
     match opts.mode {
         AppMode::List => list_todos(&opts)?,
-        AppMode::Add => add_todo(&opts)?,
-        AppMode::Remove => remove_todo(&opts)?,
+        AppMode::Add => add_todo(&mut opts)?,
+        AppMode::Remove => remove_todo(&mut opts)?,
     }
 
     Ok(())
