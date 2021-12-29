@@ -1,4 +1,6 @@
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
+use std::string::ParseError;
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -34,9 +36,29 @@ impl Display for Task {
     }
 }
 
+impl Task {
+    pub fn new(contents: String, urgency: Urgency) -> Task {
+        Task {
+            contents,
+            urgency,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
 pub enum Urgency {
     Low,
     Medium,
     High,
+}
+
+impl From<String> for Urgency {
+    fn from(s: String) -> Urgency {
+        match s.trim().to_lowercase().as_str() {
+            "low" => Urgency::Low,
+            "medium" => Urgency::Medium,
+            "high" => Urgency::High,
+            _ => panic!("failed to parse urgency"),
+        }
+    }
 }
