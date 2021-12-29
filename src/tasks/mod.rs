@@ -14,7 +14,7 @@ impl Tasks {
     }
 
     pub fn sort_tasks(&mut self) {
-        self.tasks.sort_by_key(|task| task.urgency);
+        self.tasks.sort_by(|task1, task2| task2.urgency.cmp(&task1.urgency));
     }
 }
 

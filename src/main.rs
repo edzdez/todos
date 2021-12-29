@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fs;
 use std::fs::{create_dir_all, File};
+use anyhow::Context;
 use structopt::StructOpt;
 use dirs::config_dir;
 use crate::options::{AppMode, Options};
@@ -16,24 +17,28 @@ fn read_todos(opts: &Options) -> Result<Tasks, Box<dyn Error>> {
             let mut default_dir = config_dir().expect("unable to access default config directory");
             default_dir.push("todos");
             if !default_dir.exists() {
-                create_dir_all(&default_dir)?;
+                create_dir_all(&default_dir)
+                    .with_context(|| format!("could not create directory {:?}", default_dir))?;
             }
 
             default_dir.push("todos.json");
             if !default_dir.exists() {
-                File::create(&default_dir)?;
+                File::create(&default_dir)
+                    .with_context(|| format!("could not create file {:?}", default_dir))?;
             }
 
             default_dir
         }
     };
 
-    let mut contents = fs::read_to_string(&file_path)?;
+    let mut contents = fs::read_to_string(&file_path)
+        .with_context(|| format!("file `{:?}` does not exist", file_path))?;
     if contents.is_empty() {
         contents = String::from("{\n\t\"tasks\": []\n}");
     }
 
-    let tasks: Tasks = serde_json::from_str(&contents)?;
+    let tasks: Tasks = serde_json::from_str(&contents)
+        .with_context(|| format!("failed to deserialize contents: {}", contents))?;
 
     Ok(tasks)
 }
