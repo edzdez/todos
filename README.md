@@ -10,8 +10,13 @@ todos <list, add, remove>
 
 ### Options:
 
-* **-s <num-to-show>**, **--show <num-to-show>**: specify the number of items to show
+#### Global:
+
 * **-f <file-path>**, **--file <file-path>**: specify the file path for the todo-list file
+
+#### List:
+
+* **-s <num-to-show>**, **--show <num-to-show>**: specify the number of items to show
 
 ## To Build:
 
